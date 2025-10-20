@@ -1,0 +1,7 @@
+- id: tffumpt
+  name: tffumpt
+  description: A stricter terraform fmt
+  entry: tffumpt
+  language: golang
+  types:
+    - terraform

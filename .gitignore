@@ -1,0 +1,10 @@
+.DS_Store
+
+*.out
+# Added by goreleaser init:
+dist/
+
+/tffumpt
+/tffumpt.exe
+
+TODO.md

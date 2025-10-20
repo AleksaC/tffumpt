@@ -1,0 +1,54 @@
+name: test-install
+
+on:
+  push:
+    paths: &paths
+      - "install.sh"
+      - ".github/workflows/test-install.yml"
+    branches:
+      - main
+  pull_request:
+    paths: *paths
+    branches:
+      - main
+  release:
+    types:
+      - published
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test-install:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+          - windows-latest
+          - windows-11-arm
+          - macos-latest
+          - macos-13
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Set up test environment
+        run: |
+          mkdir -p $HOME/.local/bin
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Run the install script
+        # uses PR source ref when triggered by PR
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/AleksaC/tffumpt/refs/heads/${{ github.head_ref || github.ref_name }}/install.sh | sh
+
+      - name: Verify installation
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            tffumpt.exe -version
+          else
+            tffumpt -version
+          fi

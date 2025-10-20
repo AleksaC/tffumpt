@@ -1,0 +1,36 @@
+name: tests
+
+on:
+  push:
+    paths: &paths
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+      - ".github/workflows/tests.yml"
+    branches:
+      - main
+  pull_request:
+    paths: *paths
+    branches:
+      - main
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Run tests
+        run: go test -v ./...

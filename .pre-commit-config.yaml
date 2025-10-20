@@ -1,0 +1,48 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-json
+      - id: check-yaml
+      - id: check-symlinks
+
+  - repo: https://github.com/sirosen/check-jsonschema
+    rev: 0.33.3
+    hooks:
+      - id: check-github-workflows
+
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v2.4.0
+    hooks:
+      - id: golangci-lint-config-verify
+      - id: golangci-lint-full
+
+  - repo: https://github.com/errata-ai/vale
+    rev: v3.12.0
+    hooks:
+      - id: vale
+        types_or:
+          - markdown
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.36.2
+    hooks:
+      - id: typos
+
+  - repo: local
+    hooks:
+      - id: goreleaser-check
+        name: goreleaser-check
+        language: golang
+        files: .goreleaser.yaml$
+        additional_dependencies:
+          - github.com/goreleaser/goreleaser/v2@v2.9.0
+        entry: goreleaser check
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+    - id: shellcheck
+      args: ["-e", "SC3043"]

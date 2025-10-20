@@ -1,0 +1,58 @@
+version: "2"
+
+issues:
+  fix: true
+
+linters:
+  default: none
+
+  enable:
+    - errcheck
+    - exhaustive
+    - goconst
+    - govet
+    - ineffassign
+    - lll
+    - nakedret
+    - nolintlint
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+
+  settings:
+    lll:
+      line-length: 120
+      tab-width: 4
+
+    nolintlint:
+      require-explanation: false
+      require-specific: true
+
+  exclusions:
+    generated: lax
+    paths:
+      - vendor$
+      - third_party$
+      - testdata$
+      - Godeps$
+      - builtin$
+
+formatters:
+  enable:
+    - goimports
+    - gofumpt
+
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/AleksaC/tffumpt
+
+  exclusions:
+    generated: lax
+    paths:
+      - vendor$
+      - third_party$
+      - testdata$
+      - Godeps$
+      - builtin$
