@@ -64,15 +64,9 @@ func formatExpression(tokens hclwrite.Tokens, pos int, ctx Context, continueOnNe
 				return formattedTokens, pos
 			}
 
-			// TODO: likely needs to handle cases when there are comments
-			// we don't need to check if continueOnNewline is true, because if it wasn't
-			// the function would have already returned
-			if tokens[pos].Type == hclsyntax.TokenNewline {
-				// TODO: bounds check ?
-				if tokens[pos+1].Type == hclsyntax.TokenNewline {
-					pos++
-					continue
-				}
+			if tokens[pos].Type == hclsyntax.TokenNewline && tokens[pos+1].Type == hclsyntax.TokenNewline {
+				pos++
+				continue
 			}
 
 			res, pos = tokens[pos:pos+1], pos+1
