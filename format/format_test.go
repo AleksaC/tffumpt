@@ -618,10 +618,11 @@ func TestFormatLists(t *testing.T) {
 			Target:   []byte("locals {\n  list = [\n    1,\n    2,\n    3,\n  ]\n}\n"),
 		},
 		{
+			// heredoc closing token needs to be followed by a newline so we shouldn't add a trailing comma
 			Name:     "TrailingCommaHeredoc",
 			Filename: "test.tf",
-			Source:   []byte("locals {\n  list = [\n    <<EOF\n    aaaa\n    EOF\n  ]\n}\n"),
-			Target:   []byte("locals {\n  list = [\n    <<EOF\n    aaaa\n    EOF\n  ]\n}\n"),
+			Source:   []byte("locals {\n  list = [\n    <<EOF\n    test\n    EOF\n  ]\n}\n"),
+			Target:   []byte("locals {\n  list = [\n    <<EOF\n    test\n    EOF\n  ]\n}\n"),
 		},
 		{
 			Name:     "TrailingCommaCbrack",
@@ -676,6 +677,13 @@ func TestFormatLists(t *testing.T) {
 			Filename: "test.tf",
 			Source:   []byte("locals {\n  list = [\n    1\n\n    ,\n    2\n    , 3,\n\n    4,\n\n\n\n    5\n  , ]\n}\n"),
 			Target:   []byte("locals {\n  list = [\n    1,\n    2,\n    3,\n    4,\n    5,\n  ]\n}\n"),
+		},
+		{
+			// heredoc closing token needs to be followed by a newline so we shouldn't hoist up the comma following it
+			Name:     "UselessNewlinesHeredoc",
+			Filename: "test.tf",
+			Source:   []byte("locals {\n  list = [\n    <<EOF\n    test\n    EOF\n    ,\n    \"test\",\n  ]\n}\n"),
+			Target:   []byte("locals {\n  list = [\n    <<EOF\n    test\n    EOF\n    ,\n    \"test\",\n  ]\n}\n"),
 		},
 		{
 			Name:     "UselessNewlinesComments",
@@ -934,6 +942,13 @@ func TestFormatFunctions(t *testing.T) {
 			Filename: "test.tf",
 			Source:   []byte("locals {\n  foo = bar(\n    1\n\n    ,\n    2\n    , 3,\n\n    4,\n\n\n\n    5\n  , )\n}\n"),
 			Target:   []byte("locals {\n  foo = bar(\n    1,\n    2,\n    3,\n    4,\n    5\n  )\n}\n"),
+		},
+		{
+			// heredoc closing token needs to be followed by a newline so we shouldn't hoist up the comma following it
+			Name:     "UselessNewlinesHeredoc",
+			Filename: "test.tf",
+			Source:   []byte("locals {\n  foo = bar(\n    <<EOF\n    test\n    EOF\n    ,\n    \"test\"\n  )\n}\n"),
+			Target:   []byte("locals {\n  foo = bar(\n    <<EOF\n    test\n    EOF\n    ,\n    \"test\"\n  )\n}\n"),
 		},
 		{
 			Name:     "UselessNewlinesComments",

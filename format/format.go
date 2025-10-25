@@ -278,7 +278,13 @@ func formatFunction(tokens hclwrite.Tokens, pos int, ctx Context) (hclwrite.Toke
 			isFloatingComma := isNewline(res[len(res)-1])
 			if isFloatingComma && !isTrailingComma {
 				i := findLast(res, len(res)-1)
-				res = append(res[:i+1], append(hclwrite.Tokens{delimiter}, res[i+1:]...)...)
+				// heredoc closing token needs to be followed by newline,
+				// otherwise the expression is invalid
+				if res[i].Type == hclsyntax.TokenCHeredoc {
+					isFloatingComma = false
+				} else {
+					res = append(res[:i+1], append(hclwrite.Tokens{delimiter}, res[i+1:]...)...)
+				}
 			}
 
 			formattedTokens = append(formattedTokens, res...)
@@ -435,7 +441,13 @@ func formatList(tokens hclwrite.Tokens, pos int, ctx Context) (hclwrite.Tokens, 
 			isFloatingComma := isNewline(res[len(res)-1])
 			if isFloatingComma {
 				i := findLast(res, len(res)-1)
-				res = append(res[:i+1], append(hclwrite.Tokens{delimiter}, res[i+1:]...)...)
+				// heredoc closing token needs to be followed by newline,
+				// otherwise the expression is invalid
+				if res[i].Type == hclsyntax.TokenCHeredoc {
+					isFloatingComma = false
+				} else {
+					res = append(res[:i+1], append(hclwrite.Tokens{delimiter}, res[i+1:]...)...)
+				}
 			}
 
 			formattedTokens = append(formattedTokens, res...)
