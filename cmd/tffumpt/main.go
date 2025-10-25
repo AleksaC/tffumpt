@@ -34,7 +34,7 @@ func main() {
 	flag.Bool(
 		"no-color",
 		true,
-		"Currently only exists for compatibility with terraform fmt as there's no color in the output either way",
+		"Currently only exists for compatibility with terraform fmt as there's no color in the output anyway",
 	)
 
 	flag.Parse()
@@ -46,11 +46,13 @@ func main() {
 
 	files := flag.Args()
 
-	os.Exit(tffumpt.Fumpt(files, &tffumpt.Options{
-		List:      *list,
-		Write:     *write,
-		Diff:      *diff,
-		Check:     *check,
-		Recursive: *recursive,
-	}))
+	os.Exit(
+		tffumpt.Fumpt(files, &tffumpt.Options{
+			List:      *list,
+			Write:     *write,
+			Diff:      *diff,
+			Check:     *check,
+			Recursive: *recursive,
+		}),
+	)
 }

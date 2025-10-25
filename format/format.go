@@ -220,8 +220,8 @@ func formatFunction(tokens hclwrite.Tokens, pos int, ctx Context) (hclwrite.Toke
 
 		delimiter := tokens[pos]
 
-		// in case we have something like `(<element>` in a multiline function,
-		// we move the element to a separate line by prepending the newline
+		// in case we have something like `(<argument>` in a multiline function,
+		// we move the argument to a separate line by prepending the newline
 		if tokens[prevPos].Type == hclsyntax.TokenOParen && res[0].Type != hclsyntax.TokenComment &&
 			(isMultiLine || (delimiter.Type == hclsyntax.TokenComma && isNewline(tokens[pos+1]))) {
 			res = append(hclwrite.Tokens{
@@ -239,7 +239,7 @@ func formatFunction(tokens hclwrite.Tokens, pos int, ctx Context) (hclwrite.Toke
 				i := findLast(res, len(res)-1)
 
 				if i >= 0 {
-					// <element>), in a multiline function move paren to a separate line
+					// <argument>), in a multiline function move paren to a separate line
 					if i == len(res)-1 {
 						res = append(res, &hclwrite.Token{
 							Type:         hclsyntax.TokenNewline,
@@ -406,7 +406,7 @@ func formatList(tokens hclwrite.Tokens, pos int, ctx Context) (hclwrite.Tokens, 
 						res = append(res, right...)
 					}
 				} else {
-					// this can only happen in an empty map, res only contains  newlines and comments
+					// this can only happen in an empty list, res only contains  newlines and comments
 					onlyNewlines := true
 					for _, token := range res {
 						if token.Type != hclsyntax.TokenNewline {
@@ -740,7 +740,7 @@ func formatMap(tokens hclwrite.Tokens, pos int, ctx Context) (hclwrite.Tokens, i
 		mapElement = hclwrite.Tokens{}
 
 		// only handles "loose" newlines and single-line comments as the one at the
-		// end of an element or following the comma at the end of element is picked
+		// end of an element or following a comma at the end of element is picked
 		// up with that element
 		if isNewlineOrComment(tokens[pos]) {
 			if tokens[pos].Type == hclsyntax.TokenComment && !bytes.Contains(tokens[pos].Bytes, []byte{'\n'}) {
@@ -752,10 +752,10 @@ func formatMap(tokens hclwrite.Tokens, pos int, ctx Context) (hclwrite.Tokens, i
 			isMultiLine = true
 
 			// skip newline if the next one is newline or single-line comment
-			// collapse empty multi-line map (`{\n}``) to inline one (`{}``)
+			// collapse empty multi-line map (`{\n}`) to inline one (`{}`)
 			if tokens[pos].Type != hclsyntax.TokenNewline ||
-				tokens[pos-1].Type != hclsyntax.TokenOBrace && tokens[pos+1].Type != hclsyntax.TokenNewline ||
-				tokens[pos-1].Type == hclsyntax.TokenOBrace && tokens[pos+1].Type != hclsyntax.TokenCBrace {
+				(tokens[pos-1].Type != hclsyntax.TokenOBrace && tokens[pos+1].Type != hclsyntax.TokenNewline) ||
+				(tokens[pos-1].Type == hclsyntax.TokenOBrace && tokens[pos+1].Type != hclsyntax.TokenCBrace) {
 				mapElement = append(mapElement, tokens[pos])
 			}
 
@@ -1018,7 +1018,6 @@ func collapseNewlines(tokens hclwrite.Tokens, pos int) (hclwrite.Tokens, int) {
 			res = append(res, tokens[pos])
 		}
 		pos++
-		continue
 	}
 
 	return res, pos

@@ -1,16 +1,13 @@
 name: test-install
 
 on:
-  push:
-    paths: &paths
+  push: &triggers
+    paths:
       - "install.sh"
       - ".github/workflows/test-install.yml"
     branches:
       - main
-  pull_request:
-    paths: *paths
-    branches:
-      - main
+  pull_request: *triggers
   release:
     types:
       - published

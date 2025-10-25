@@ -401,7 +401,7 @@ func TestFormatComments(t *testing.T) {
 			Target:   []byte("# needs space\n"),
 		},
 		{
-			Name:     "MissingSpace",
+			Name:     "MissingSpacePattern",
 			Filename: "test.tf",
 			Source:   []byte("###############\n## doesn't need space\n###############\n"),
 			Target:   []byte("###############\n## doesn't need space\n###############\n"),

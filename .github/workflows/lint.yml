@@ -1,8 +1,8 @@
 name: lint
 
 on:
-  push:
-    paths: &paths
+  push: &triggers
+    paths:
       - "**.go"
       - "go.mod"
       - "go.sum"
@@ -10,13 +10,7 @@ on:
       - ".github/workflows/lint.yml"
     branches:
       - main
-  pull_request:
-    paths: *paths
-    branches:
-      - main
-
-permissions:
-  contents: read
+  pull_request: *triggers
 
 jobs:
   lint:

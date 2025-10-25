@@ -1,18 +1,15 @@
 name: tests
 
 on:
-  push:
-    paths: &paths
+  push: &triggers
+    paths:
       - "**.go"
       - "go.mod"
       - "go.sum"
       - ".github/workflows/tests.yml"
     branches:
       - main
-  pull_request:
-    paths: *paths
-    branches:
-      - main
+  pull_request: *triggers
 
 jobs:
   test:
