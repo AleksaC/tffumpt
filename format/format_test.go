@@ -618,6 +618,12 @@ func TestFormatLists(t *testing.T) {
 			Target:   []byte("locals {\n  list = [\n    1,\n    2,\n    3,\n  ]\n}\n"),
 		},
 		{
+			Name:     "TrailingCommaHeredoc",
+			Filename: "test.tf",
+			Source:   []byte("locals {\n  list = [\n    <<EOF\n    aaaa\n    EOF\n  ]\n}\n"),
+			Target:   []byte("locals {\n  list = [\n    <<EOF\n    aaaa\n    EOF\n  ]\n}\n"),
+		},
+		{
 			Name:     "TrailingCommaCbrack",
 			Filename: "test.tf",
 			Source:   []byte("locals {\n  list = [\n    1,\n    2,\n    3 ]\n}\n"),

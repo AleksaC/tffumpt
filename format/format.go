@@ -398,12 +398,16 @@ func formatList(tokens hclwrite.Tokens, pos int, ctx Context) (hclwrite.Tokens, 
 							SpacesBefore: 0,
 						})
 					} else {
-						// we append trailing comma before any comments or newlines
-						// between the element and the closing bracket
-						left, right := res[:i+1], res[i+1:]
-						res = append(hclwrite.Tokens{}, left...)
-						res = append(res, trailingComma)
-						res = append(res, right...)
+						// heredoc closing token needs to be followed by newline,
+						// otherwise the expression is invalid
+						if res[i].Type != hclsyntax.TokenCHeredoc {
+							// we append trailing comma before any comments or newlines
+							// between the element and the closing bracket
+							left, right := res[:i+1], res[i+1:]
+							res = append(hclwrite.Tokens{}, left...)
+							res = append(res, trailingComma)
+							res = append(res, right...)
+						}
 					}
 				} else {
 					// this can only happen in an empty list, res only contains  newlines and comments
