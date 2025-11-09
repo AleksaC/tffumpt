@@ -4,12 +4,12 @@ A stricter terraform fmt.
 
 ## About
 
-The inspiration for this project comes from [gofumpt](https://github.com/mvdan/gofumpt).
-
 tffumpt is compatible with terraform fmt, i.e. every file with valid formatting
 according to tffumpt will also be valid according to terraform fmt, the reverse
 isn't necessarily true as tffumpt adds additional formatting rules terraform fmt
 isn't opinionated about.
+
+The inspiration for this project comes from [gofumpt](https://github.com/mvdan/gofumpt).
 
 Since core formatting logic in terraform fmt hasn't changed since before the license
 change, this project contains a fork of pre-BUSL terraform fmt and is therefore
@@ -57,10 +57,10 @@ tffumpt -help
 Additionally, tffumpt mirrors terraform fmt command line interface, so you may
 find some useful information in the terraform fmt command [reference](https://developer.hashicorp.com/terraform/cli/commands/fmt)
 
-**Example**: non-recursively format all the terraform files in the current directory:
+**Example**: non-recursively format all terraform files in the current directory:
 
 ```shell
-tffumpt .
+tffumpt
 ```
 
 ### Integrations
@@ -70,10 +70,10 @@ officially supported integration is with [pre-commit](https://pre-commit.com/).
 
 The configuration you need to add to `.pre-commit-config.yaml` looks something like this:
 
-```
+```yaml
 repos:
   - repo: https://github.com/AleksaC/tffumpt
-    rev: v0.1.0
+    rev: v0.1.1
     hooks:
       - id: tffumpt
 ```
@@ -307,7 +307,7 @@ list = [
 ## Roadmap
 
 This project was primarily developed for personal use, and that purpose has been
-largely fulfilled, therefore it will only receive bug fixes if they pop up. If
+largely fulfilled, therefore it will mostly receive bug fixes if they pop up. If
 there is enough community interest and support, things like editor support,
 shell completions, first-party CI support and additional rules may be implemented.
 
