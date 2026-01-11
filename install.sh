@@ -104,13 +104,10 @@ VERSION="v${VERSION#v}"
 ARCHIVE_NAME="tffumpt-${VERSION}-${OS}-${ARCH}.zip"
 DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${VERSION}/${ARCHIVE_NAME}"
 
-if [ "$DRY_RUN" != "false" ]; then
-    tmpdir=$(dirname "$(mktemp -ut tmp.XXXXXXXXXX)")
-fi
-cd "$tmpdir"
-
 echo "Downloading from: ${DOWNLOAD_URL}"
 if [ "$DRY_RUN" = "false" ]; then
+    tmpdir=$(dirname "$(mktemp -ut tmp.XXXXXXXXXX)")
+    cd "$tmpdir"
     http_req "${DOWNLOAD_URL}" "${ARCHIVE_NAME}"
 fi
 
