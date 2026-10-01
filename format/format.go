@@ -20,8 +20,14 @@ func Format(src []byte, filename string) ([]byte, hcl.Diagnostics) {
 		return nil, diags
 	}
 
-	for _, block := range f.Body().Blocks() {
-		formatExpressions(block)
+	syntaxFile, syntaxDiags := hclsyntax.ParseConfig(src, filename, hcl.InitialPos)
+	if syntaxDiags.HasErrors() {
+		return nil, syntaxDiags
+	}
+	syntaxBody := syntaxFile.Body.(*hclsyntax.Body)
+
+	for i, block := range f.Body().Blocks() {
+		formatExpressions(block, syntaxBody.Blocks[i].Body)
 	}
 
 	// hclwrite AST doesn't expose comments and newlines between blocks so we need to handle them separately
@@ -33,17 +39,22 @@ func Format(src []byte, filename string) ([]byte, hcl.Diagnostics) {
 type Context struct {
 	attributeName string
 	blockType     string
+	sourceRange   hcl.Range
 }
 
-func formatExpressions(b *hclwrite.Block) {
+func formatExpressions(b *hclwrite.Block, syntaxBody *hclsyntax.Body) {
 	body := b.Body()
 	for name, attr := range body.Attributes() {
-		ctx := Context{attributeName: name, blockType: b.Type()}
+		ctx := Context{
+			attributeName: name,
+			blockType:     b.Type(),
+			sourceRange:   syntaxBody.Attributes[name].Expr.Range(),
+		}
 		formattedAttr, _ := formatExpression(attr.Expr().BuildTokens(nil), 0, ctx, true)
 		body.SetAttributeRaw(name, formattedAttr)
 	}
-	for _, block := range body.Blocks() {
-		formatExpressions(block)
+	for i, block := range body.Blocks() {
+		formatExpressions(block, syntaxBody.Blocks[i].Body)
 	}
 }
 
@@ -83,7 +94,7 @@ func formatExpression(tokens hclwrite.Tokens, pos int, ctx Context, continueOnNe
 
 			if delim.Type != hclsyntax.TokenColon {
 				// this should never happen if the parser is implemented correctly
-				log.Fatalf("Expected ':', got `%s`", tokens[pos].Bytes)
+				log.Fatalf("%s: Expected ':', got `%s`", ctx.sourceRange.String(), tokens[pos].Bytes)
 			}
 
 			res = append(res, expr1...)
@@ -101,7 +112,9 @@ func formatExpression(tokens hclwrite.Tokens, pos int, ctx Context, continueOnNe
 			res, pos = tokens[pos:pos+1], pos+1
 		case hclsyntax.TokenOBrack:
 			// check if it's indexing operator instead of list literal
-			if pos > 0 && (tokens[pos-1].Type == hclsyntax.TokenIdent || tokens[pos-1].Type == hclsyntax.TokenCParen ||
+			isForCollection := pos > 0 && tokens[pos-1].Type == hclsyntax.TokenIdent &&
+				bytes.Equal(tokens[pos-1].Bytes, []byte("in"))
+			if pos > 0 && !isForCollection && (tokens[pos-1].Type == hclsyntax.TokenIdent || tokens[pos-1].Type == hclsyntax.TokenCParen ||
 				tokens[pos-1].Type == hclsyntax.TokenCBrace || tokens[pos-1].Type == hclsyntax.TokenCBrack) {
 				oBracketPos := pos
 				res, pos = formatExpression(tokens, pos+1, ctx, true)
@@ -621,7 +634,7 @@ func formatForExpression(tokens hclwrite.Tokens, pos int, ctx Context) (hclwrite
 			res, pos = formatExpression(tokens, pos, ctx, true)
 			if tokens[pos].Type != hclsyntax.TokenColon {
 				// should never happen
-				log.Fatalf("Expected `:`, found %s", tokens[pos].Bytes)
+				log.Fatalf("%s: Expected `:`, found %s", ctx.sourceRange.String(), tokens[pos].Bytes)
 			}
 
 			lastToken := findLast(res, len(res)-1)
@@ -646,7 +659,7 @@ func formatForExpression(tokens hclwrite.Tokens, pos int, ctx Context) (hclwrite
 			if tokens[pos].Type == hclsyntax.TokenFatArrow {
 				if formattedTokens[0].Type != hclsyntax.TokenOBrace {
 					// should never happen
-					log.Fatal("Found `=>` in list for expression")
+					log.Fatalf("%s: Found `=>` in list for expression", ctx.sourceRange.String())
 				}
 
 				if res[0].Type == hclsyntax.TokenOQuote {
@@ -719,7 +732,7 @@ func formatForExpression(tokens hclwrite.Tokens, pos int, ctx Context) (hclwrite
 				if isMapForExpression {
 					expected = "}"
 				}
-				log.Fatalf("Expected `%s`, got `%s`", expected, tokens[pos].Bytes)
+				log.Fatalf("%s: Expected `%s`, got `%s`", ctx.sourceRange.String(), expected, tokens[pos].Bytes)
 			}
 			formattedTokens = append(formattedTokens, tokens[pos])
 			pos++

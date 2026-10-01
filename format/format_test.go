@@ -897,11 +897,39 @@ func TestFormatForExpressions(t *testing.T) {
 			Source:   []byte("locals {\n  map = {\n    # testing\n\n    for s in var.list :\n\n    s => upper(s)\n  }\n}\n"),
 			Target:   []byte("locals {\n  map = {\n    # testing\n    for s in var.list :\n    s => upper(s)\n  }\n}\n"),
 		},
+		{
+			Name:     "InlineListCollection",
+			Filename: "test.tf",
+			Source:   []byte("locals {\n  values = [for n in [1, 2, 3] : n]\n}\n"),
+			Target:   []byte("locals {\n  values = [for n in [1, 2, 3] : n]\n}\n"),
+		},
+		{
+			Name:     "NestedInlineListCollection",
+			Filename: "test.tf",
+			Source:   []byte("locals {\n  values = [for n in [for m in [1, 2, 3] : m] : n]\n}\n"),
+			Target:   []byte("locals {\n  values = [for n in [for m in [1, 2, 3] : m] : n]\n}\n"),
+		},
 	}
 
 	for _, test := range cases {
 		res, _ := Format(test.Source, test.Filename)
 		AssertEqual(t, test.Name, res, test.Target)
+	}
+}
+
+func TestFormatParseDiagnosticsIncludeSourceLocation(t *testing.T) {
+	source := []byte("locals {\n  value = [for n in [1] n]\n}\n")
+	_, diags := Format(source, "location.tf")
+	if !diags.HasErrors() {
+		t.Fatal("Format() returned no diagnostics for invalid HCL")
+	}
+
+	diag := diags[0]
+	if diag.Subject == nil {
+		t.Fatal("diagnostic has no source range")
+	}
+	if diag.Subject.Filename != "location.tf" || diag.Subject.Start.Line != 2 || diag.Subject.Start.Column == 0 {
+		t.Fatalf("diagnostic source range = %s, want location.tf at line 2", diag.Subject)
 	}
 }
 

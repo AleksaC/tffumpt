@@ -31,10 +31,20 @@ type Options struct {
 }
 
 func Fumpt(filenames []string, f *Options) int {
+	return fumpt(filenames, f, true)
+}
+
+func fumpt(filenames []string, f *Options, preflight bool) int {
 	status := 0
 
 	if len(filenames) == 0 {
 		filenames = []string{"."}
+	}
+
+	if preflight && f.Recursive && f.Write && !f.Check {
+		if status := preflightRecursive(filenames); status != 0 {
+			return status
+		}
 	}
 
 	for _, filename := range filenames {
@@ -80,11 +90,7 @@ func Fumpt(filenames []string, f *Options) int {
 				}
 
 				if len(filePaths) > 0 {
-					st := Fumpt(filePaths, f)
-
-					if f.Check {
-						status |= st
-					}
+					status |= fumpt(filePaths, f, false)
 				}
 
 				continue
@@ -98,13 +104,7 @@ func Fumpt(filenames []string, f *Options) int {
 
 		res, diags := format.Format(src, filename)
 
-		for _, diag := range diags {
-			diagType := "ERROR"
-			if diag.Severity == hcl.DiagWarning {
-				diagType = "WARNING"
-			}
-			fmt.Printf("[%s] %s: %s\n\n%s\n\n", diagType, diag.Subject, diag.Summary, diag.Detail)
-		}
+		printDiagnostics(diags)
 		if diags.HasErrors() {
 			return 2
 		}
@@ -150,6 +150,66 @@ func Fumpt(filenames []string, f *Options) int {
 	}
 
 	return status
+}
+
+func preflightRecursive(filenames []string) int {
+	for _, filename := range filenames {
+		fileInfo, err := os.Stat(filename)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to stat file `%s`; %v\n", filename, err)
+			return 2
+		}
+
+		if fileInfo.IsDir() {
+			entries, err := os.ReadDir(filename)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to read directory `%s`; %v\n", filename, err)
+				return 2
+			}
+
+			filePaths := make([]string, 0)
+			for _, entry := range entries {
+				filePath := filepath.Join(filename, entry.Name())
+				info, err := os.Stat(filePath)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Failed to stat file `%s`; %v\n", filePath, err)
+					return 2
+				}
+
+				if info.IsDir() || isTerraformFile(filePath) {
+					filePaths = append(filePaths, filePath)
+				}
+			}
+
+			if status := preflightRecursive(filePaths); status != 0 {
+				return status
+			}
+			continue
+		}
+
+		src, err := os.ReadFile(filename)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to read file `%s`; %v\n", filename, err)
+			return 2
+		}
+		_, diags := format.Format(src, filename)
+		if diags.HasErrors() {
+			printDiagnostics(diags)
+			return 2
+		}
+	}
+
+	return 0
+}
+
+func printDiagnostics(diags hcl.Diagnostics) {
+	for _, diag := range diags {
+		diagType := "ERROR"
+		if diag.Severity == hcl.DiagWarning {
+			diagType = "WARNING"
+		}
+		fmt.Printf("[%s] %s: %s\n\n%s\n\n", diagType, diag.Subject, diag.Summary, diag.Detail)
+	}
 }
 
 func isTerraformFile(filename string) bool {
