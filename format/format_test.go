@@ -210,6 +210,16 @@ func TestParsing(t *testing.T) {
 			Source:   []byte("locals {\n  foo = provider::assert::true(var.bar)\n}\n"),
 			Target:   []byte("locals {\n  foo = provider::assert::true(var.bar)\n}\n"),
 		},
+		// simple implementation of indexing expression parsing misses the case
+		// where "in" is just an identifier and not a part of a for expression
+		// which leads to nested expression there being treated as a list element
+		// causing the formatter to add trailing newline if the expression is multiline
+		{
+			Name:     "IndexExpressionMultiline",
+			Filename: "test.tf",
+			Source:   []byte("locals {\n  ids = var.in[\n    1\n  ].id\n}\n"),
+			Target:   []byte("locals {\n  ids = var.in[\n    1\n  ].id\n}\n"),
+		},
 		{
 			Name:     "List",
 			Filename: "test.tf",
@@ -239,6 +249,24 @@ func TestParsing(t *testing.T) {
 			Filename: "test.tf",
 			Source:   []byte("locals {\n  map = [for s in var.list : upper(s)]\n}\n"),
 			Target:   []byte("locals {\n  map = [for s in var.list : upper(s)]\n}\n"),
+		},
+		{
+			Name:     "ListForExpression",
+			Filename: "test.tf",
+			Source:   []byte("locals {\n  map = [for s in var.list : upper(s)]\n}\n"),
+			Target:   []byte("locals {\n  map = [for s in var.list : upper(s)]\n}\n"),
+		},
+		{
+			Name:     "ListForExpressionWithListLiteral",
+			Filename: "test.tf",
+			Source:   []byte("locals {\n  map = [for s in [\"a\", \"b\", \"c\"] : upper(s)]\n}\n"),
+			Target:   []byte("locals {\n  map = [for s in [\"a\", \"b\", \"c\"] : upper(s)]\n}\n"),
+		},
+		{
+			Name:     "ListForExpressionNested",
+			Filename: "test.tf",
+			Source:   []byte("locals {\n  map = [for s in [for t in var.list : t] : upper(s)]\n}\n"),
+			Target:   []byte("locals {\n  map = [for s in [for t in var.list : t] : upper(s)]\n}\n"),
 		},
 		{
 			Name:     "ListForExpressionMultiline",
