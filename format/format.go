@@ -100,18 +100,15 @@ func formatExpression(tokens hclwrite.Tokens, pos int, ctx Context, continueOnNe
 			}
 			res, pos = tokens[pos:pos+1], pos+1
 		case hclsyntax.TokenOBrack:
-			// check if it's indexing operator instead of list literal
-			if pos > 0 && (tokens[pos-1].Type == hclsyntax.TokenIdent || tokens[pos-1].Type == hclsyntax.TokenCParen ||
-				tokens[pos-1].Type == hclsyntax.TokenCBrace || tokens[pos-1].Type == hclsyntax.TokenCBrack) {
-				oBracketPos := pos
-				res, pos = formatExpression(tokens, pos+1, ctx, true)
-				res = append(hclwrite.Tokens{tokens[oBracketPos]}, res...)
-				res = append(res, tokens[pos])
-				pos++
-				break
-			}
 			if resFor, posFor := formatForExpression(tokens, pos, ctx); resFor != nil {
 				res, pos = resFor, posFor
+				break
+			}
+			// indexing operator can be treated as one element list when it comes
+			// to formatting in all cases except for when it's multiline as list
+			// formatting would add a trailing comma
+			if resIdx, posFor := formatIndexExpression(tokens, pos, ctx); resIdx != nil {
+				res, pos = resIdx, posFor
 				break
 			}
 			res, pos = formatList(tokens, pos, ctx)
@@ -345,6 +342,38 @@ func formatFunction(tokens hclwrite.Tokens, pos int, ctx Context) (hclwrite.Toke
 	}
 
 	return formattedTokens, pos
+}
+
+func formatIndexExpression(tokens hclwrite.Tokens, pos int, ctx Context) (hclwrite.Tokens, int) {
+	var res hclwrite.Tokens
+
+	if pos == 0 {
+		return nil, pos
+	}
+
+	prevToken := tokens[pos-1]
+	if prevToken.Type != hclsyntax.TokenIdent && !isClosingBracket(prevToken) {
+		return nil, pos
+	}
+	if prevToken.Type == hclsyntax.TokenIdent && bytes.Equal(prevToken.Bytes, []byte("in")) {
+		// "in" can be an identifier, not a part of for-expression so we check
+		// if it's preceded by another identifier to figure this out, we could
+		// also check if the one before it is "for", but there is no need as
+		// there are no other cases where two identifiers one after another are valid
+		// this could be considered an extreme edge case, but since it's relatively
+		// straightforward to handle we do it
+		if i := findLast(tokens, pos-2); i > 0 && tokens[i].Type == hclsyntax.TokenIdent {
+			return nil, pos
+		}
+	}
+
+	oBracketPos := pos
+	res, pos = formatExpression(tokens, pos+1, ctx, true)
+	res = append(hclwrite.Tokens{tokens[oBracketPos]}, res...)
+	res = append(res, tokens[pos])
+	pos++
+
+	return res, pos
 }
 
 func formatList(tokens hclwrite.Tokens, pos int, ctx Context) (hclwrite.Tokens, int) {
@@ -1090,6 +1119,12 @@ func isNewline(token *hclwrite.Token) bool {
 
 func isMultilineComment(token *hclwrite.Token) bool {
 	return token.Type == hclsyntax.TokenComment && token.Bytes[0] == '/' && token.Bytes[1] == '*'
+}
+
+func isClosingBracket(token *hclwrite.Token) bool {
+	return token.Type == hclsyntax.TokenCParen ||
+		token.Type == hclsyntax.TokenCBrace ||
+		token.Type == hclsyntax.TokenCBrack
 }
 
 // https://developer.hashicorp.com/terraform/language/syntax/configuration#identifiers
